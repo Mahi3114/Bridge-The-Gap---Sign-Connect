@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignConnect | ISL Online Courses</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f8fafc; 
+            display: flex; 
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Sidebar Navigation (Matches your folders) --- */
+        .sidebar {
+            width: 300px;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: #1e293b;
+            color: white;
+            text-align: center;
+        }
+        
+        .sidebar-header h2 { margin: 0; font-size: 20px; }
+
+        .category { margin-bottom: 10px; }
+        .category-title {
+            padding: 15px 20px;
+            background: #f1f5f9;
+            font-weight: 700;
+            color: #475569;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #e2e8f0;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .lesson-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            font-size: 14px;
+            color: #1e293b;
+            transition: 0.2s;
+        }
+
+        .lesson-btn:hover { background: #e2e8f0; }
+        .lesson-btn.active { background: #3b82f6; color: white; font-weight: 600; }
+
+        /* --- Main Content Area --- */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-y: auto;
+        }
+
+        .video-container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h1 { color: #0f172a; margin-top: 0; margin-bottom: 20px; font-size: 24px; }
+
+        #video-placeholder {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 8px;
+        }
+
+        .controls { 
+            margin-top: 20px; 
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .controls button { 
+            padding: 10px 25px; 
+            border: none; 
+            border-radius: 6px; 
+            background-color: #10b981; 
+            color: white; 
+            cursor: pointer; 
+            font-size: 15px; 
+            font-weight: 600; 
+            transition: 0.2s; 
+        }
+
+        .controls button:hover { background-color: #059669; }
+
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Course Modules</h2>
+        </div>
+        <div id="courseCurriculum">
+            </div>
+    </div>
+
+    <div class="main-content">
+        <div class="video-container">
+            <h1 id="lessonTitle">Select a lesson to begin</h1>
+            
+            <div id="video-placeholder"></div>
+
+            <div class="controls">
+                <button onclick="setRate(0.5)">🐢 Slow (0.5x)</button>
+                <button onclick="setRate(1)">🏃 Normal (1x)</button>
+                <button onclick="setRate(1.5)">⚡ Fast (1.5x)</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        // 1. DATABASE (Mapped directly to your folder structure)
+        const courseData = {
+            "Getting Started": [
+                { name: "ISL Alphabet (A-Z)", id: "qcdivQfA41Y" },
+                { name: "Numbers (1-10)", id: "vnH2BmcSRMA" },
+                { name: "Basic Greetings", id: "X34sm62vL1E" }
+            ],
+            "Deaf Culture": [
+                { name: "Intro to Indian Deaf Culture", id: "Yp-fx6mcfRU" },
+                { name: "Identity & Ethics", id: "cEi5Mr7K_qA" }
+            ],
+            "Mouth Morphemes": [
+                { name: "Facial Expressions in ISL", id: "8FKDij2EbgQ" },
+                { name: "Visual Vernacular", id: "Ii3tDNMvWkM" }
+            ],
+            "Sign School Lessons": [
+                { name: "Polite Phrases (Please, Thanks)", id: "9hfhy1qoG_8" },
+                { name: "Saying Sorry", id: "vxcJmJmTb9I" },
+                { name: "Daily Questions (How are you?)", id: "3fS1QTOaUyk" }
+            ],
+            "Travel": [
+                { name: "Modes of Transport", id: "AuVbdWTVZyI" },
+                { name: "Directions & Navigation", id: "WExp_T_ZPb0" }
+            ]
+        };
+
+        let player;
+        let activeLessonId = null;
+
+        // 2. INITIALIZE YOUTUBE PLAYER
+        function onYouTubeIframeAPIReady() {
+            // Load the very first video by default
+            const firstVideoId = courseData["Getting Started"][0].id;
+            
+            player = new YT.Player('video-placeholder', {
+                height: '100%', 
+                width: '100%', 
+                videoId: firstVideoId,
+                playerVars: { 'rel': 0, 'modestbranding': 1 },
+                events: {
+                    'onReady': () => loadLesson(firstVideoId, courseData["Getting Started"][0].name)
+                }
+            });
+        }
+
+        // 3. LOAD SELECTED LESSON
+        function loadLesson(videoId, title) {
+            document.getElementById('lessonTitle').innerText = title;
+            activeLessonId = videoId;
+            
+            if (player && player.loadVideoById) {
+                player.loadVideoById(videoId);
+            }
+
+            // Update UI Active State
+            document.querySelectorAll('.lesson-btn').forEach(btn => {
+                if(btn.dataset.vid === videoId) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // 4. SPEED CONTROLS
+        function setRate(rate) { 
+            if (player && player.setPlaybackRate) {
+                player.setPlaybackRate(rate); 
+            }
+        }
+
+        // 5. BUILD SIDEBAR CURRICULUM
+        const curriculumDiv = document.getElementById('courseCurriculum');
+        
+        Object.keys(courseData).forEach(category => {
+            // Create Category Header
+            const catHeader = document.createElement('div');
+            catHeader.className = 'category-title';
+            catHeader.innerText = category;
+            curriculumDiv.appendChild(catHeader);
+
+            // Create Lesson Buttons for this Category
+            courseData[category].forEach(lesson => {
+                const btn = document.createElement('button');
+                btn.className = 'lesson-btn';
+                btn.innerText = "▶ " + lesson.name;
+                btn.dataset.vid = lesson.id; // Store video ID in data attribute
+                btn.onclick = () => loadLesson(lesson.id, lesson.name);
+                curriculumDiv.appendChild(btn);
+            });
+        });
+    </script>
+</body>
+</html>

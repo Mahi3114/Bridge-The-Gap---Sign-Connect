@@ -1,0 +1,13 @@
+# Ignore the oversized combined landmark file (126MB)
+new_dataset/X_landmarks.npy
+
+# Ignore the folder with thousands of individual files
+my_DATASET/
+
+# Ignore raw videos and virtual environments
+ISL_DATASET/
+venv/
+__pycache__/
+*.mp4
+*.MOV
+*.avi

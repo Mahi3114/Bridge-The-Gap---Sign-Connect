@@ -1,0 +1,6 @@
+opencv-python==4.10.0.84
+numpy==2.0.0
+torch==2.11.0+cpu
+mediapipe==0.10.9
+matplotlib==3.10.9
+scikit-learn==1.7.2

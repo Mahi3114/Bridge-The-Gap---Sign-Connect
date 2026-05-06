@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE-edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Recognition</title>
+    <link rel="stylesheet" href = "translate.css"> 
+</head>
+<body>
+    <form>
+        <h1>
+            Voice Recognition
+        </h1>
+        <textarea placeholder="Your voice message is displayed here..."></textarea>
+        <button type="submit">speak</button>
+        <button type="button">stop</button>
+    </form>
+    <script>
+        let form = document.querySelector("form");
+        let Recognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+        let spRec = new Recognition();
+        spRec.lang = "en";
+        spRec.continuous = true;
+        spRec.interimResults = true;
+
+        let lastResultTime = Date.now();
+
+        form.addEventListener("submit" , e => {
+            e.preventDefault();
+            spRec.start();
+        });
+        spRec.onresult = res => {
+            let text = Array.from(res.results)
+            .map(r => r[0])
+            .map(txt => txt.transcript).join("");
+
+            let currentTime = Date.now();
+            let timeSinceLastResult = currentTime - lastResultTime;
+            lastResultTime = currentTime;
+
+            if (timeSinceLastResult > 1000) {
+                text = "   " + text;
+            }
+            form[0].value = text;
+
+          //console.log(text);            
+        }
+        form[2].addEventListener("click" , ()=> {
+            spRec.stop();
+        });
+    </script>
+</body>
+</html>

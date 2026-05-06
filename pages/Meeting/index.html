@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SignConnect Pro | Enterprise</title>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --accent-gray: #475569;
+      --border-light: rgba(0, 0, 0, 0.08);
+      --glass-bg: rgba(255, 255, 255, 0.7);
+      --danger-red: #be123c;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* --- HEADER --- */
+    .header {
+      padding: 14px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff;
+      border-bottom: 1px solid var(--border-light);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    .brand { font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #000; }
+    .meeting-id { font-size: 13px; color: var(--text-muted); background: #f1f5f9; padding: 6px 15px; border-radius: 4px; border: 1px solid var(--border-light); }
+
+    /* --- VIDEO GRID --- */
+    .call-area {
+      flex: 1;
+      display: flex;
+      padding: 30px;
+      gap: 20px;
+      position: relative;
+    }
+
+    .remote-wrap {
+      flex: 1;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      position: relative;
+    }
+
+    .local-wrap {
+      position: absolute;
+      bottom: 50px;
+      right: 50px;
+      width: 320px;
+      aspect-ratio: 16/9;
+      background: #111;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #fff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      z-index: 10;
+    }
+
+    video { width: 100%; height: 100%; object-fit: cover; }
+    #localVideo { transform: scaleX(-1); }
+
+    /* --- CAPTION SYSTEM --- */
+    .caption-box {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0,0,0,0.85);
+      padding: 15px;
+      text-align: center;
+      box-sizing: border-box;
+    }
+
+    .cap-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+    .cap-text { font-size: 17px; font-weight: 500; color: #fff; line-height: 1.4; }
+
+    /* --- CONTROLS PANEL --- */
+    .controls {
+      height: 90px;
+      background: #fff;
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .btn {
+      height: 48px;
+      padding: 0 24px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent-gray);
+      transition: all 0.15s ease;
+    }
+
+    .btn svg { width: 18px; height: 18px; fill: var(--accent-gray); }
+
+    .btn:hover { background: #f8fafc; border-color: #cbd5e1; color: #000; }
+    .btn:hover svg { fill: #000; }
+
+    .btn-call { background: var(--accent-gray); color: #fff; border: none; }
+    .btn-call svg { fill: #fff; }
+    .btn-call:hover { background: #1e293b; color: #fff; }
+    .btn-call:hover svg { fill: #fff; }
+
+    .btn-leave { background: var(--danger-red); color: #fff; border: none; }
+    .btn-leave svg { fill: #fff; }
+    .btn-leave:hover { background: #9f1239; color: #fff; }
+
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="brand">SignConnect Pro</div>
+  <div class="meeting-id">ID: <span id="myId" style="font-weight: 700;">Connecting...</span></div>
+</div>
+
+<div class="call-area">
+  <div class="remote-wrap">
+    <video id="remoteVideo" autoplay playsinline></video>
+  </div>
+
+  <div class="local-wrap">
+    <video id="localVideo" autoplay muted playsinline></video>
+    <div class="caption-box">
+      <div id="liveWord" class="cap-label">AI System Idle</div>
+      <div id="finalSentence" class="cap-text">Initializing Camera...</div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn" onclick="toggleMic()">
+    <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+    Audio
+  </button>
+
+  <button class="btn" onclick="toggleCam()">
+    <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+    Video
+  </button>
+
+  <button class="btn btn-call" onclick="callFriend()">
+    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-1 9h-5v5h-2v-5H5v-2h5V6h2v5h5v2z"/></svg>
+    Connect
+  </button>
+
+  <button class="btn btn-leave" onclick="leave()">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" transform="rotate(45 12 12)"/></svg>
+    End Call
+  </button>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  let localStream = null;
+  let peer = null;
+  let lastSpokenText = "";
+
+  function speakText(text) {
+    if (!text || text.trim() === "" || text.includes("...")) return;
+    if (text === lastSpokenText) return; 
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.9;
+    window.speechSynthesis.speak(utterance);
+    lastSpokenText = text;
+  }
+
+  async function startCamera() {
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      document.getElementById("localVideo").srcObject = localStream;
+      initPeerJS();
+    } catch (err) {
+      document.getElementById('finalSentence').innerText = "Permission Denied";
+    }
+  }
+  startCamera();
+
+  function initPeerJS() {
+    peer = new Peer(); 
+    peer.on('open', (id) => { document.getElementById("myId").innerText = id; });
+    peer.on('call', (call) => {
+      call.answer(localStream); 
+      call.on('stream', (remoteStream) => { document.getElementById('remoteVideo').srcObject = remoteStream; });
+    });
+  }
+
+  window.callFriend = function() {
+    const friendId = prompt("Enter Participant Meeting ID:");
+    if (!friendId) return;
+    const call = peer.call(friendId, localStream);
+    call.on('stream', (remoteStream) => { document.getElementById('remoteVideo').srcObject = remoteStream; });
+  }
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  async function processAIFrames() {
+    const video = document.getElementById('localVideo');
+    if (!localStream || video.videoWidth === 0) return; 
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const frameData = canvas.toDataURL('image/jpeg', 0.5);
+
+    try {
+      const response = await fetch('http://127.0.0.1:5000/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: frameData })
+      });
+      const data = await response.json();
+      if (data.status === 'success') {
+        if (data.sentence && data.sentence !== "") {
+            document.getElementById('finalSentence').innerText = data.sentence;
+            document.getElementById('liveWord').innerText = "Translation Finalized";
+            speakText(data.sentence);
+        } else if (data.word) {
+            document.getElementById('finalSentence').innerText = data.word;
+            document.getElementById('liveWord').innerText = "Detecting Sign...";
+        }
+      }
+    } catch (err) {
+      document.getElementById('liveWord').innerText = "Backend Offline";
+    }
+  }
+
+  setInterval(processAIFrames, 250);
+
+  window.toggleMic = function () { localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled; };
+  window.toggleCam = function () { localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled; };
+  window.leave = function () { if (peer) peer.destroy(); window.location.reload(); };
+});
+</script>
+</body>
+</html>
